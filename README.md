@@ -1,5 +1,11 @@
 # wen
 CLI natural language date parser in rust, built on timelib, with some quality of life improvements.
+<img width="501" height="330" alt="Screenshot 2025-08-28 at 11 26 15 PM" src="https://github.com/user-attachments/assets/f35a5ebb-d63c-41c6-9307-649761689a5b" />
+
+### Install:
+```
+cargo install wen
+```
 
 ### Options:
 - `--unix` to output just unix timestamp
@@ -13,8 +19,14 @@ Any of the following can be combined with --unix, --utc, or --tz:
 - `wen 2:15pm`
 - `wen tomorrow at noon`
 - `wen tonight at midnight`
+- `wen August 29th at 8pm`
+- `wen July 4th 1776`
+- `wen 3:03am on September 29th`
+- `wen on Sunday`
 - `wen in 24 hours`
+- `wen 5 minutes ago`
 - `wen yesterday at 3pm`
 - `wen 2:32am next thursday`
 - `wen last tuesday at 1:30pm`
+- `wen next saturday at 11am`
 - `wen 5 hours and 20 minutes from now`
