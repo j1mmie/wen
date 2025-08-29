@@ -1,8 +1,10 @@
 
 use std::env;
+use std::str::FromStr;
 use std::process;
 use regex::Regex;
-use chrono::{Local, TimeZone, Utc};
+use chrono::{TimeZone};
+use owo_colors::OwoColorize;
 
 fn replace_whole_word(haystack: &str, needle: &str, replacement: &str) -> String {
     let re = Regex::new(&format!("(?i)\\b{}\\b", regex::escape(needle))).unwrap();
@@ -27,6 +29,10 @@ fn remove_on(s: &str) -> String {
 // Support phrases like "at 4pm today" and "on Monday at 2pm"
 fn remove_at(s: &str) -> String {
     replace_whole_word(s, "at", "")
+}
+// Support phrases like "5 hours and 20 minutes from now"
+fn remove_and(s: &str) -> String {
+    replace_whole_word(s, "and", "")
 }
 
 // Support phrases like "in 24 hours"
@@ -59,6 +65,7 @@ const MUTATIONS: &[fn(&str) -> String] = &[
     tonight_to_today,
     remove_on,
     remove_at,
+    remove_and,
     remove_in,
     remove_from_now,
     support_time_as_prefix,
@@ -66,14 +73,37 @@ const MUTATIONS: &[fn(&str) -> String] = &[
 ];
 
 fn main() {
-    // Join all CLI args into one input string (so spaces are allowed).
     let mut args = env::args().skip(1).collect::<Vec<_>>();
     if args.is_empty() {
-        eprintln!("usage: wen <free-form date/time> [--unix]");
+        eprintln!("usage: wen <free-form date/time> [--unix] [--utc] [--tz <iana_tz>]");
         process::exit(2);
     }
-    let unix_mode = args.contains(&"--unix".to_string());
-    args.retain(|a| a != "--unix");
+
+    let mut unix_mode = false;
+    let mut use_utc = false;
+    let mut tz_arg: Option<String> = None;
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--unix" => {
+                unix_mode = true;
+                args.remove(i);
+            },
+            "--utc" => {
+                use_utc = true;
+                args.remove(i);
+            },
+            "--tz" => {
+                if i + 1 >= args.len() {
+                    exit_with("--tz requires an argument");
+                }
+                tz_arg = Some(args[i + 1].clone());
+                args.drain(i..=i+1);
+            },
+            _ => i += 1,
+        }
+    }
+
     let joined = args.join(" ").trim().to_string();
 
     // Apply all mutation functions in order
@@ -83,16 +113,20 @@ fn main() {
     }
     input = input.trim().to_string();
 
-    println!("Parsing: '{}'", input);
-
-    let tz_name = match iana_time_zone::get_timezone() {
-        Ok(t) => t,
-        Err(e) => exit_with(&format!("failed to detect system timezone: {e}")),
+    let tz_name = if use_utc {
+        "UTC".to_string()
+    } else if let Some(tz) = tz_arg {
+        tz
+    } else {
+        match iana_time_zone::get_timezone() {
+            Ok(t) => t,
+            Err(e) => exit_with(&format!("failed to detect system timezone: {e}")),
+        }
     };
 
     let tz = match timelib::Timezone::parse(&tz_name) {
         Ok(t) => t,
-        Err(e) => exit_with(&format!("invalid system timezone '{}': {}", tz_name, e)),
+        Err(e) => exit_with(&format!("invalid timezone '{}': {}", tz_name, e)),
     };
 
     let ts = match timelib::strtotime(&input, None, &tz) {
@@ -104,39 +138,27 @@ fn main() {
         println!("{ts}");
         return;
     }
-    print_report(ts);
+    print_report(ts, &tz_name);
 }
 
-fn print_report(ts: i64) {
+fn print_report(ts: i64, tz_name: &str) {
     let unix_secs = ts;
-    let dt_utc = Utc.timestamp_opt(ts, 0).single();
-    let dt_local = Local.timestamp_opt(ts, 0).single();
+    // Try to use the selected timezone for output
+    let dt = match chrono_tz::Tz::from_str(tz_name) {
+        Ok(tz) => tz.timestamp_opt(ts, 0).single(),
+        Err(_) => None,
+    };
+
     println!("");
-    println!("Unix Time: {}", unix_secs);
-    // Table header
+    println!("  {}     {}", "Unix:".bright_blue(), unix_secs.magenta());
+    println!("  {} {}", "Timezone:".bright_blue(), tz_name.green());
+
+    if let Some(dt) = dt {
+        println!("  {} {}", "ISO 8601:".bright_blue(), dt.to_rfc3339().yellow());
+        println!("  {} {}", "RFC 2822:".bright_blue(), dt.to_rfc2822().yellow());
+    }
+
     println!("");
-    println!("                | C-time                    | ISO 8601                  | RFC 2822");
-    println!("----------------+---------------------------+---------------------------+---------------------------------");
-    // Local row
-    if let Some(dt_local) = dt_local {
-        println!("  Local         | {:<25} | {:<25} | {:<30}",
-            dt_local.format("%a %b %e %T %Y"),
-            dt_local.to_rfc3339(),
-            dt_local.to_rfc2822()
-        );
-    } else {
-        println!("  Local         | {:<25} | {:<25} | {:<30}", "<invalid>", "<invalid>", "<invalid>");
-    }
-    // UTC row
-    if let Some(dt_utc) = dt_utc {
-        println!("  UTC           | {:<25} | {:<25} | {:<30}",
-            dt_utc.format("%a %b %e %T %Y"),
-            dt_utc.to_rfc3339(),
-            dt_utc.to_rfc2822()
-        );
-    } else {
-        println!("  UTC           | {:<25} | {:<25} | {:<30}", "<invalid>", "<invalid>", "<invalid>");
-    }
 }
 
 fn exit_with(msg: &str) -> ! {
