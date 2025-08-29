@@ -6,6 +6,7 @@ license = "MIT OR Apache-2.0"
 keywords = ["time", "date", "cli", "tool"]
 categories = ["command-line-utilities"]
 exclude = ["/target", ".gitignore"]
+description = "Natural language CLI date parser built on timelib."
 
 [dependencies]
 iana-time-zone = "0.1.63"
