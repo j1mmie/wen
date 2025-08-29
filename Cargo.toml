@@ -7,6 +7,7 @@ keywords = ["time", "date", "cli", "tool"]
 categories = ["command-line-utilities"]
 exclude = ["/target", ".gitignore"]
 description = "Natural language CLI date parser built on timelib."
+repository = "https://github.com/j1mmie/wen"
 
 [dependencies]
 owo-colors = { version = "4", features = ["supports-colors"] }
