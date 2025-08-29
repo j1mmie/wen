@@ -1,6 +1,6 @@
 [package]
 name = "wen"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 keywords = ["time", "date", "cli", "tool"]
@@ -11,9 +11,9 @@ repository = "https://github.com/j1mmie/wen"
 
 [dependencies]
 owo-colors = { version = "4", features = ["supports-colors"] }
- iana-time-zone = "0.1.63"
- timelib = "0.3.7"
- chrono = "0.4"
- regex = "1"
- chrono-tz = "0.8"
- clap = { version = "4", features = ["derive"] }
+iana-time-zone = "0.1.63"
+timelib = "0.3.7"
+chrono = "0.4"
+regex = "1"
+chrono-tz = "0.8"
+clap = { version = "4", features = ["derive"] }
