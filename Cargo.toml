@@ -2,6 +2,10 @@
 name = "wen"
 version = "0.1.0"
 edition = "2024"
+license = "MIT OR Apache-2.0"
+keywords = ["time", "date", "cli", "tool"]
+categories = ["command-line-utilities"]
+exclude = ["/target", ".gitignore"]
 
 [dependencies]
 iana-time-zone = "0.1.63"
