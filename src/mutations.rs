@@ -1,3 +1,15 @@
+use chrono::{TimeZone, Utc};
+fn unix_timestamp_to_rfc2822(s: &str) -> String {
+    let re = Regex::new(r"\b(\d{10})\b").unwrap();
+    re.replace_all(s, |caps: &regex::Captures| {
+        let ts = caps[1].parse::<i64>().unwrap_or(0);
+        let dt = Utc.timestamp_opt(ts, 0).single();
+        match dt {
+            Some(date) => date.to_rfc2822(),
+            None => caps[0].to_string(),
+        }
+    }).into()
+}
 use regex::Regex;
 
 fn replace_whole_word(haystack: &str, needle: &str, replacement: &str) -> String {
@@ -45,6 +57,7 @@ fn replace_simple_times_with_complex(s: &str) -> String {
 }
 
 const MUTATIONS: &[fn(&str) -> String] = &[
+    unix_timestamp_to_rfc2822,
     tonight_to_today,
     remove_on,
     remove_at,
